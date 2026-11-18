@@ -2582,11 +2582,11 @@ html, body {
         font-size: 10px;
     }
 
-    /* Horizontal Zoom (- Z + Target) Bar in Bottom-Right (above the 42px Netlify badge at bottom:0 right:0) */
+    /* Horizontal Zoom (- Z + Target) Bar in Bottom-Right (aligned with GPS pill at bottom: 12px) */
     .zoom-dock {
         pointer-events: auto;
         position: fixed;
-        bottom: 54px;
+        bottom: 12px;
         right: 10px;
         flex-direction: row;
         align-items: center;
@@ -2743,7 +2743,7 @@ html, body {
 
     .right-main-column {
         position: fixed;
-        bottom: 98px;
+        bottom: 64px;
         left: 62px;
         right: 10px;
         width: auto;
