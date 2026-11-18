@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VICE CITY ATLAS — Yanis V17 Interactive Leonida OS</title>
+    <meta name="description" content="Mappa interattiva ultra-premium di GTA VI Vice City & Leonida basata su Yanis V17. Esplora 3.485+ spot, interni, hotel, segreti e aggiungi i tuoi marker.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Grand+Hotel&family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet & MarkerCluster -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css?v=mobile2">
+</head>
+<body>
+    <!-- Ambient Tropical Glow Frame -->
+    <div class="ambient-frame" aria-hidden="true"></div>
+
+    <!-- Fullscreen Interactive Map Canvas (100vw x 100vh on BOTH PC and Mobile!) -->
+    <div id="map" aria-label="Mappa interattiva di Vice City e Leonida"></div>
+
+    <!-- TOP-LEFT FLOATING BRAND CAPSULE -->
+    <header class="hud-top-left" id="hudTopBrand">
+        <div class="glass-panel brand-capsule" id="brandCapsule" title="Centra su Vice City">
+            <div class="vc-emblem">
+                <img src="assets/gtavi-logo.png" alt="GTA VI Logo" class="gtavi-logo-img">
+                <div class="brand-titles">
+                    <div class="brand-main">
+                        <span class="gta-title">LEONIDA</span>
+                        <span class="vc-script">Vice City</span>
+                    </div>
+                    <div class="brand-sub">
+                        <span class="badge-live"></span>
+                        <span>YANIS17 ATLAS OS</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- LEFT FLOATING DOCK (Vertically Centered on PC, Bottom-Left Row Next to Esplora Spot on Mobile) -->
+    <aside class="hud-left" id="hudLeft">
+        <div class="left-dock-column" id="leftDockColumn">
+            <!-- Separate Apple-Style Orange Circular Orb for Yanis Legend & Reference Photos -->
+            <button class="legend-orb-btn" id="btnToggleLegendWidget" aria-label="Legenda & Foto Riferimento Yanis">
+                <i data-lucide="book-open"></i>
+                <span class="dock-tooltip">Legenda & Foto</span>
+            </button>
+
+            <!-- Main Tool Pill Dock -->
+            <div class="glass-panel left-icon-dock" role="toolbar" aria-label="Strumenti Mappa">
+                <button class="dock-btn" data-drawer="layers" aria-label="Stile Mappa Yanis">
+                    <i data-lucide="layers"></i>
+                    <span class="dock-tooltip">Mappa Yanis17</span>
+                </button>
+                <button class="dock-btn" data-drawer="teleport" aria-label="Zone e Città">
+                    <i data-lucide="navigation"></i>
+                    <span class="dock-tooltip">Zone & Città</span>
+                </button>
+                <button class="dock-btn" data-drawer="myspots" aria-label="I Miei Spot">
+                    <i data-lucide="bookmark-plus"></i>
+                    <span class="dock-tooltip">I Miei Spot</span>
+                </button>
+                <div class="dock-spacer"></div>
+                <button class="dock-btn" id="btnMeasureTool" aria-label="Misura Distanza">
+                    <i data-lucide="ruler"></i>
+                    <span class="dock-tooltip">Misura Distanza</span>
+                </button>
+                <button class="dock-btn" id="btnSurpriseMe" aria-label="Spot Casuale">
+                    <i data-lucide="sparkles"></i>
+                    <span class="dock-tooltip">Spot Casuale</span>
+                </button>
+            </div>
+
+            <!-- Separate Apple-Style Pink/Purple Circular Orb for Adding a Spot -->
+            <button class="spot-orb-btn" id="btnAddSpotMode" aria-label="Aggiungi Spot sulla Mappa">
+                <i data-lucide="map-pin-plus"></i>
+                <span class="dock-tooltip">Nuovo Spot</span>
+            </button>
+
+            <!-- Mobile-Only Circular Orb for Opening/Expanding "Esplora gli Spot" Search Widget -->
+            <button class="mobile-search-orb-btn" id="btnMobileSearchOrb" aria-label="Cerca & Esplora Spot">
+                <i data-lucide="search"></i>
+                <span class="dock-tooltip">Esplora Spot</span>
+            </button>
+
+            <!-- Mobile-Only Circular Orb for Opening/Toggling "Filtra gli Spot" Directly (Always Available!) -->
+            <button class="mobile-filter-orb-btn" id="btnMobileFilterOrb" aria-label="Filtra gli Spot">
+                <i data-lucide="sliders-horizontal"></i>
+                <span class="dock-tooltip">Filtri</span>
+            </button>
+        </div>
+
+        <!-- Expandable Left Context Drawer (Layers, Teleport, My Spots) with X Close Button -->
+        <div class="glass-panel left-drawer collapsed" id="leftDrawer">
+            <!-- TAB: MAP ENGINE & YANIS17 LAYERS -->
+            <section class="drawer-pane active" id="pane-layers">
+                <div class="drawer-header">
+                    <div>
+                        <span class="eyebrow">CARTOGRAFIA HD</span>
+                        <h2>Motore Yanis V17</h2>
+                    </div>
+                    <div class="header-right-actions">
+                        <span class="badge-version">CLEAN PRO</span>
+                        <button class="widget-close-btn js-close-left-drawer" aria-label="Chiudi pannello">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <p class="drawer-desc">
+                    Mappa integrale <strong>Yanis V17 Clean</strong> centrata sulla penisola di Leonida e Vice City (da Redhill a nord fino alle Leonida Keys e al Golfo a ovest).
+                </p>
+
+                <div class="control-group">
+                    <label class="control-label">Modalità Visiva Mappa</label>
+                    <div class="theme-cards">
+                        <button class="theme-card active" data-map-style="nocams-dark">
+                            <div class="theme-preview preview-dark"></div>
+                            <div class="theme-info">
+                                <strong>Vice Night Dark</strong>
+                                <span>Notte Neon & Antracite</span>
+                            </div>
+                        </button>
+                        <button class="theme-card" data-map-style="nocams-normal">
+                            <div class="theme-preview preview-normal"></div>
+                            <div class="theme-info">
+                                <strong>Tropical Atlas Day</strong>
+                                <span>Colori Solari Rockstar HD</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">Confronto Dimensioni Mappe Rockstar</label>
+                    <p class="control-sub">Sovrapponi in scala 1:1 le mappe classiche per vedere quanto è immensa Leonida:</p>
+                    <div class="overlay-toggles">
+                        <label class="glass-toggle">
+                            <input type="checkbox" id="toggleOverlayVC2002">
+                            <span class="toggle-track"></span>
+                            <span class="toggle-text">🌴 GTA Vice City (2002)</span>
+                        </label>
+                        <label class="glass-toggle">
+                            <input type="checkbox" id="toggleOverlayGTAV">
+                            <span class="toggle-track"></span>
+                            <span class="toggle-text">⛰️ GTA V (Los Santos)</span>
+                        </label>
+                        <label class="glass-toggle">
+                            <input type="checkbox" id="toggleOverlayGTAIV">
+                            <span class="toggle-track"></span>
+                            <span class="toggle-text">🗽 GTA IV (Liberty City)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">Opzioni Visive Radar</label>
+                    <div class="overlay-toggles">
+                        <label class="glass-toggle">
+                            <input type="checkbox" id="toggleDistrictLabels" checked>
+                            <span class="toggle-track"></span>
+                            <span class="toggle-text">Etichette Neon Quartieri sulla Mappa</span>
+                        </label>
+                        <label class="glass-toggle">
+                            <input type="checkbox" id="toggleCoordinateGrid">
+                            <span class="toggle-track"></span>
+                            <span class="toggle-text">Griglia Tattica Coordinate GPS</span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: TELEPORT & REGIONS -->
+            <section class="drawer-pane" id="pane-teleport">
+                <div class="drawer-header">
+                    <div>
+                        <span class="eyebrow">FAST TRAVEL GPS</span>
+                        <h2>Quartieri & Biomi</h2>
+                    </div>
+                    <button class="widget-close-btn js-close-left-drawer" aria-label="Chiudi pannello">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <p class="drawer-desc">Vola istantaneamente nei punti nevralgici di Vice City e dello Stato di Leonida.</p>
+
+                <div class="region-grid" id="regionGrid">
+                    <!-- Populated via JS -->
+                </div>
+            </section>
+
+            <!-- TAB: MY SPOTS & CUSTOM CREATOR -->
+            <section class="drawer-pane" id="pane-myspots">
+                <div class="drawer-header">
+                    <div>
+                        <span class="eyebrow">COMMUNITY & CREATOR</span>
+                        <h2>I Tuoi Spot & Segreti</h2>
+                    </div>
+                    <button class="widget-close-btn js-close-left-drawer" aria-label="Chiudi pannello">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <p class="drawer-desc">
+                    Aggiungi nuovi spot sulla mappa (armi segrete, auto rare, easter egg) o esporta/importa il tuo pacchetto JSON.
+                </p>
+
+                <div class="creator-actions">
+                    <button class="btn-primary-gradient" id="btnStartPinDrop">
+                        <i data-lucide="crosshair"></i>
+                        <span>Piazza Nuovo Spot sulla Mappa</span>
+                    </button>
+                    <div class="Creator-io-row">
+                        <button class="btn-glass-secondary" id="btnExportSpots">
+                            <i data-lucide="download"></i>
+                            <span>Esporta JSON</span>
+                        </button>
+                        <label class="btn-glass-secondary file-label">
+                            <i data-lucide="upload"></i>
+                            <span>Importa JSON</span>
+                            <input type="file" id="inputImportSpots" accept=".json" hidden>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- New Spot Form -->
+                <form class="spot-creator-form" id="spotCreatorForm" hidden>
+                    <div class="form-header">
+                        <h4>Nuovo Spot Personalizzato</h4>
+                        <span class="coord-pill" id="creatorCoordBadge">X: 0, Y: 0</span>
+                    </div>
+                    <input type="text" id="customSpotTitle" placeholder="Nome dello Spot (es. Infernus Segreta)" required>
+                    <div class="form-row-2">
+                        <select id="customSpotCategory">
+                            <option value="custom">⭐ Spot Personale</option>
+                            <option value="enterable">🚪 Interno Esplorabile</option>
+                            <option value="hotel">🏨 Hotel / Safehouse</option>
+                            <option value="nightlife">🍸 Nightlife / Club</option>
+                            <option value="shop">🔫 Armi / Negozio</option>
+                            <option value="landmark">🌴 Landmark / Easter Egg</option>
+                        </select>
+                        <input type="text" id="customSpotDistrict" placeholder="Quartiere (es. Ocean Beach)">
+                    </div>
+                    <textarea id="customSpotDesc" rows="2" placeholder="Note, consigli o come trovarlo..."></textarea>
+                    <input type="url" id="customSpotImage" placeholder="URL Immagine opzionale (https://...)">
+                    <div class="form-actions">
+                        <button type="button" class="btn-glass-secondary" id="btnCancelCustomSpot">Annulla</button>
+                        <button type="submit" class="btn-primary-gradient">Salva Spot</button>
+                    </div>
+                </form>
+
+                <div class="saved-lists-tabs">
+                    <button class="saved-tab active" data-savedtab="custom">Creazioni (<span id="tabCountCustom">0</span>)</button>
+                    <button class="saved-tab" data-savedtab="favorites">Preferiti (<span id="tabCountFav">0</span>)</button>
+                    <button class="saved-tab" data-savedtab="found">Completati (<span id="tabCountFound">0</span>)</button>
+                </div>
+
+                <div class="user-spots-list" id="userSpotsList">
+                    <!-- Populated via JS -->
+                </div>
+            </section>
+        </div>
+
+        <!-- SEPARATE FLOATING LEGEND & REFERENCE PHOTOS WIDGET -->
+        <div class="glass-panel legend-atlas-widget" id="legendAtlasWidget" hidden>
+            <div class="drawer-header">
+                <div>
+                    <span class="eyebrow">GUIDA CARTOGRAFICA</span>
+                    <h2>Legenda Yanis & Galleria</h2>
+                </div>
+                <button class="widget-close-btn" id="btnCloseLegendWidget" aria-label="Chiudi Legenda">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <div class="legend-tabs-bar">
+                <button class="legend-tab-btn active" data-ltab="guide">🗺️ Simboli Originali</button>
+                <button class="legend-tab-btn" data-ltab="gallery">🎬 Galleria Foto & Trailer</button>
+            </div>
+
+            <!-- Sub-pane 1: Authentic Yanis Map Symbols -->
+            <div class="legend-tab-pane active" id="ltab-guide">
+                <div class="legend-section">
+                    <h4>Infrastrutture & Strade (Simboli Originali Yanis)</h4>
+                    <div class="authentic-features-list">
+                        <div class="auth-feat-row">
+                            <span class="auth-feat-name">Highway (Autostrada)</span>
+                            <div class="auth-swatches">
+                                <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#2b3036"/><path d="M-4 20 L52 4 M-4 12 L52 -4 M20 26 L52 14" stroke="#a0aab4" stroke-width="3.5"/><path d="M-4 20 L52 4" stroke="#2b3036" stroke-width="1"/></svg>
+                                <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#2b3036"/><path d="M-4 20 L52 4 M-4 12 L52 -4 M20 26 L52 14" stroke="#d86c5c" stroke-width="3.5"/></svg>
+                            </div>
+                        </div>
+                        <div class="auth-feat-row">
+                            <span class="auth-feat-name">Road (Strada Urbana)</span>
+                            <div class="auth-swatches">
+                                <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#23282e"/><path d="M-4 14 L52 18 M18 -4 L10 28 M38 -4 L30 28" stroke="#9aa4ae" stroke-width="4"/></svg>
+                                <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#23282e"/><path d="M-4 14 L52 18 M18 -4 L10 28 M38 -4 L30 28" stroke="#c85a53" stroke-width="4"/></svg>
+                            </div>
+                        </div>
+                        <div class="auth-feat-row">
+                            <span class="auth-feat-name">Alley (Vicolo Secondario)</span>
+                            <div class="auth-swatches">
+                                <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#23282e"/><path d="M4 20 Q24 12 44 18 M18 2 L14 22 M34 2 L38 22" stroke="#78828c" stroke-width="2" fill="none"/></svg>
+                                <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#23282e"/><path d="M4 20 Q24 12 44 18 M18 2 L14 22 M34 2 L38 22" stroke="#9e584f" stroke-width="2" fill="none"/></svg>
+                            </div>
+                        </div>
+                        <div class="auth-feat-row">
+                            <span class="auth-feat-name">Footpath (Sentiero Pedonale)</span>
+                            <div class="auth-swatches">
+                                <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#b4cc78"/><path d="M2 16 Q22 8 46 16 M16 2 L16 14 M32 2 L32 14" stroke="#8a968e" stroke-width="2" fill="none"/></svg>
+                                <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#b4cc78"/><path d="M2 16 Q22 8 46 16 M16 2 L16 14 M32 2 L32 14" stroke="#c45c54" stroke-width="2" fill="none"/></svg>
+                            </div>
+                        </div>
+                        <div class="auth-feat-row">
+                            <span class="auth-feat-name">Dirt Road (Sterrato)</span>
+                            <div class="auth-swatches">
+                                <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#a8c66c"/><path d="M0 4 L48 22 M28 0 L12 24" stroke="#8c7a5b" stroke-width="3.5"/></svg>
+                                <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#a8c66c"/><path d="M0 4 L48 22 M28 0 L12 24" stroke="#c85a53" stroke-width="3.5"/></svg>
+                            </div>
+                        </div>
+                        <div class="auth-feat-row">
+                            <span class="auth-feat-name">Railway & Metrorail</span>
+                            <div class="auth-swatches">
+                                <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#2b3036"/><path d="M0 6 L48 9 M0 12 L48 15 M0 18 L48 21" stroke="#d8dde2" stroke-width="2"/></svg>
+                                <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#2b3036"/><path d="M0 6 L48 9 M0 12 L48 15 M0 18 L48 21" stroke="#e07268" stroke-width="2"/></svg>
+                            </div>
+                        </div>
+                        <div class="auth-feat-row">
+                            <span class="auth-feat-name">County Borders (Confini)</span>
+                            <div class="auth-swatches">
+                                <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#9ec468"/><line x1="0" y1="12" x2="48" y2="12" stroke="#7CE8FF" stroke-width="3" stroke-dasharray="6,5"/></svg>
+                                <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#9ec468"/><line x1="0" y1="12" x2="48" y2="12" stroke="#FF9B6A" stroke-width="3" stroke-dasharray="6,5"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="legend-section">
+                    <h4>Edifici & Interni (Buildings)</h4>
+                    <div class="authentic-features-list">
+                        <div class="auth-feat-row">
+                            <span class="auth-feat-name">Confirmed Interior (Interno Esplorabile)</span>
+                            <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#a8c66c"/><polygon points="8,4 38,4 34,20 14,18" fill="#6b7db3" stroke="#1e2436" stroke-width="2"/></svg>
+                        </div>
+                        <div class="auth-feat-row">
+                            <span class="auth-feat-name">Unconfirmed Interior (Edificio Mappato)</span>
+                            <svg viewBox="0 0 48 24" class="auth-svg"><rect width="48" height="24" fill="#a8c66c"/><polygon points="8,4 38,4 34,20 14,18" fill="#a8adb3" stroke="#333940" stroke-width="2"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="legend-section">
+                    <h4>Tavola Originale Yanis V17 (Clicca per Ingrandire)</h4>
+                    <div class="original-yanis-sheet" id="btnOpenOriginalLegendSheet" title="Clicca per ingrandire la tavola originale a tutto schermo">
+                        <img src="assets/legend/yanis-legend-day.png" alt="Legenda Originale Yanis V17">
+                        <div class="sheet-overlay-hint">
+                            <i data-lucide="zoom-in"></i>
+                            <span>Ingrandisci Tavola Originale Yanis V17</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub-pane 2: Scrollable & Zoomable Gallery of Trailer 1, Trailer 2, Official Screenshots -->
+            <div class="legend-tab-pane" id="ltab-gallery">
+                <div class="gallery-filter-pills">
+                    <button class="g-pill active" data-gfilter="all">Tutte</button>
+                    <button class="g-pill" data-gfilter="trailer">Trailer 1 & 2</button>
+                    <button class="g-pill" data-gfilter="screenshot">Screenshot Rockstar</button>
+                </div>
+                <div class="legend-photo-grid" id="legendPhotoGrid">
+                    <!-- Populated via JS with clickable zoomable cards -->
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- RIGHT FLOATING UNIFIED EXPLORER ASSEMBLY (PC: Centered Right | Mobile: Bottom Floating Overlay with 2-Spot Height) -->
+    <aside class="hud-right-center" id="hudRightCenter">
+        <!-- Spot Inspector Floating Card -->
+        <div class="glass-panel inspector-card" id="inspectorCard" hidden>
+            <div class="inspector-media" id="inspectorMedia">
+                <img id="inspectorImg" src="" alt="Anteprima Spot" loading="lazy">
+                <div class="inspector-media-placeholder" id="inspectorPlaceholder">
+                    <i data-lucide="palmtree"></i>
+                    <span>VICE CITY RADAR LOCK</span>
+                </div>
+                <div class="media-top-badges">
+                    <span class="cat-badge" id="inspectorCatBadge">HOTEL</span>
+                    <span class="id-badge" id="inspectorIdBadge">#L16</span>
+                </div>
+                <div class="media-mode-switch" id="mediaModeSwitch" hidden>
+                    <button class="media-btn active" data-photo="ig">🎮 In-Game</button>
+                    <button class="media-btn" data-photo="rl">🌎 Real-Life Miami</button>
+                </div>
+                <button class="inspector-close" id="btnCloseInspector" aria-label="Chiudi dettagli">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <div class="inspector-body">
+                <div class="inspector-title-row">
+                    <div>
+                        <span class="inspector-district" id="inspectorDistrict">OCEAN BEACH, VICE BEACH</span>
+                        <h3 id="inspectorTitle">Ocean View Hotel</h3>
+                    </div>
+                </div>
+
+                <div class="inspector-tags" id="inspectorTags"></div>
+
+                <div class="inspector-meta-grid">
+                    <div class="meta-box">
+                        <span class="meta-label">COORDINATE IN-GAME</span>
+                        <div class="meta-val-row">
+                            <code id="inspectorCoords">X: 1959.5, Y: 639.0</code>
+                            <button class="icon-copy-btn" id="btnCopyCoords" title="Copia coordinate">
+                                <i data-lucide="copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="meta-box">
+                        <span class="meta-label">FONTE MAPPING</span>
+                        <strong id="inspectorSource">Yanis V17 / GTADB</strong>
+                    </div>
+                </div>
+
+                <div class="inspector-rl-box" id="inspectorRlBox">
+                    <div class="rl-header">
+                        <i data-lucide="globe-2"></i>
+                        <span>CONTROPARTE REALE (FLORIDA)</span>
+                    </div>
+                    <p id="inspectorRlAddress">Ocean Drive, Miami Beach, FL, USA</p>
+                    <a id="inspectorGmapsLink" href="#" target="_blank" rel="noopener noreferrer" class="rl-link" hidden>
+                        <span>Apri in Google Street View</span>
+                        <i data-lucide="external-link"></i>
+                    </a>
+                </div>
+
+                <div class="inspector-action-bar">
+                    <button class="action-pill" id="btnToggleFavorite">
+                        <i data-lucide="star"></i>
+                        <span>Preferito</span>
+                    </button>
+                    <button class="action-pill" id="btnToggleFound">
+                        <i data-lucide="check-circle-2"></i>
+                        <span>Visitato</span>
+                    </button>
+                    <button class="action-pill" id="btnCenterSpot" title="Zoom massimo sullo spot">
+                        <i data-lucide="focus"></i>
+                        <span>Zoom</span>
+                    </button>
+                    <button class="action-pill action-danger" id="btnDeleteCustomSpot" hidden title="Elimina spot personalizzato">
+                        <i data-lucide="trash-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- POP-OUT FILTER WIDGET (PC: Slides out left of Esplora Spot | Mobile: Pops UPWARD above Esplora Spot!) -->
+        <div class="glass-panel filter-popout-widget" id="filterPopoutWidget">
+            <div class="filter-popout-header">
+                <div>
+                    <span class="eyebrow">CATEGORIE MAPPA</span>
+                    <h3>Filtra gli Spot</h3>
+                </div>
+                <button class="widget-close-btn" id="btnCloseFilterPopout" aria-label="Chiudi Filtri">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="filter-popout-list" aria-label="Filtri Categorie Spot">
+                <button class="v-filter-chip active" data-cat="all" id="chipAll">
+                    <span class="chip-dot dot-all"></span>
+                    <span class="v-chip-label">Tutti gli Spot</span>
+                    <span class="v-chip-count" id="count-all">3485</span>
+                </button>
+                <button class="v-filter-chip active" data-cat="enterable">
+                    <span class="chip-dot" style="--c: #FF6B2B"></span>
+                    <i data-lucide="door-open" class="v-chip-icon"></i>
+                    <span class="v-chip-label">Interni Esplorabili</span>
+                    <span class="v-chip-count" id="count-enterable">0</span>
+                </button>
+                <button class="v-filter-chip active" data-cat="hotel">
+                    <span class="chip-dot" style="--c: #FF2A85"></span>
+                    <i data-lucide="hotel" class="v-chip-icon"></i>
+                    <span class="v-chip-label">Hotel & Resort</span>
+                    <span class="v-chip-count" id="count-hotel">0</span>
+                </button>
+                <button class="v-filter-chip active" data-cat="nightlife">
+                    <span class="chip-dot" style="--c: #FF8E3C"></span>
+                    <i data-lucide="martini" class="v-chip-icon"></i>
+                    <span class="v-chip-label">Nightlife & Club</span>
+                    <span class="v-chip-count" id="count-nightlife">0</span>
+                </button>
+                <button class="v-filter-chip active" data-cat="shop">
+                    <span class="chip-dot" style="--c: #B537F2"></span>
+                    <i data-lucide="shopping-bag" class="v-chip-icon"></i>
+                    <span class="v-chip-label">Negozi & Armi</span>
+                    <span class="v-chip-count" id="count-shop">0</span>
+                </button>
+                <button class="v-filter-chip active" data-cat="trailer">
+                    <span class="chip-dot" style="--c: #FF4D8D"></span>
+                    <i data-lucide="clapperboard" class="v-chip-icon"></i>
+                    <span class="v-chip-label">Trailer Spot</span>
+                    <span class="v-chip-count" id="count-trailer">0</span>
+                </button>
+                <button class="v-filter-chip active" data-cat="screenshot">
+                    <span class="chip-dot" style="--c: #FFD166"></span>
+                    <i data-lucide="camera" class="v-chip-icon"></i>
+                    <span class="v-chip-label">Screenshot Rockstar</span>
+                    <span class="v-chip-count" id="count-screenshot">0</span>
+                </button>
+                <button class="v-filter-chip active" data-cat="transit">
+                    <span class="chip-dot" style="--c: #D946EF"></span>
+                    <i data-lucide="plane" class="v-chip-icon"></i>
+                    <span class="v-chip-label">Trasporti & Ponti</span>
+                    <span class="v-chip-count" id="count-transit">0</span>
+                </button>
+                <button class="v-filter-chip active" data-cat="landmark">
+                    <span class="chip-dot" style="--c: #A78BFA"></span>
+                    <i data-lucide="landmark" class="v-chip-icon"></i>
+                    <span class="v-chip-label">Landmark & Edifici</span>
+                    <span class="v-chip-count" id="count-landmark">0</span>
+                </button>
+                <button class="v-filter-chip active" data-cat="custom">
+                    <span class="chip-dot" style="--c: #FF0055"></span>
+                    <i data-lucide="star" class="v-chip-icon"></i>
+                    <span class="v-chip-label">I Miei Spot</span>
+                    <span class="v-chip-count" id="count-custom">0</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: [Top "Filtri" Pill Button] + [Apple-Rounded Esplora Spot Widget with Active Badge INSIDE] + [3 Icon Pill Bar] -->
+        <div class="right-main-column">
+            <!-- Top Row Above Esplora Spot: Rounded "Filtri" Button on the Top-Left -->
+            <div class="right-top-bar">
+                <button class="glass-panel btn-filtri-toggle" id="btnToggleFiltersPopup" aria-expanded="false">
+                    <i data-lucide="sliders-horizontal"></i>
+                    <span>Filtri</span>
+                </button>
+            </div>
+
+            <!-- Row wrapper so on Mobile the 3-icon bar sits to the RIGHT of Esplora Spot, and on PC it sits below! -->
+            <div class="explore-and-symbols-wrap">
+                <!-- Main Apple-Style Rounded Widget: Esplora gli Spot (With Active Counter Badge + Mobile Close X Inside Header!) -->
+                <section class="glass-panel explore-widget-right" id="exploreWidgetRight" aria-label="Esplora gli Spot">
+                    <div class="drawer-header">
+                        <div>
+                            <span class="eyebrow">DATABASE LEONIDA</span>
+                            <h2>Esplora gli Spot</h2>
+                        </div>
+                        <div class="header-right-actions">
+                            <span class="pill-counter" id="visibleSpotsBadge">3.485 attivi</span>
+                            <button class="widget-close-btn mobile-close-explore-btn" id="btnCloseMobileExplore" aria-label="Chiudi Ricerca Spot">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="search-box">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="spotSearchInput" placeholder="Cerca Ocean View, Malibu, Vice Beach..." autocomplete="off">
+                        <button class="search-clear" id="btnClearSearch" hidden aria-label="Pulisci ricerca">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+
+                    <!-- Scrollable Spot List with Top & Bottom Edge Blur Fade -->
+                    <div class="spot-list-wrapper">
+                        <div class="spot-list-container" id="spotListContainer">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3-Icon Pill Bar: Con Foto, Preferiti, Trovati (Below on PC, Right of Widget on Mobile!) -->
+                <div class="glass-panel bottom-symbol-dock" role="group" aria-label="Filtri Rapidi">
+                    <button class="dock-symbol-btn" data-subfilter="photo" aria-label="Con Foto">
+                        <i data-lucide="camera"></i>
+                        <span class="symbol-tooltip">Con Foto</span>
+                    </button>
+                    <button class="dock-symbol-btn" data-subfilter="saved" aria-label="Preferiti">
+                        <i data-lucide="star"></i>
+                        <span class="symbol-tooltip">Preferiti</span>
+                    </button>
+                    <button class="dock-symbol-btn" data-subfilter="found" aria-label="Trovati">
+                        <i data-lucide="check"></i>
+                        <span class="symbol-tooltip">Trovati</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Telemetry & Zoom Capsule (PC: Bottom-Right | Mobile: Top-Right Horizontal Long Pill + Horizontal Zoom Below!) -->
+    <div class="hud-bottom-right" id="hudTelemetryZoom">
+        <!-- Distance Measurement Floating Banner (When active) -->
+        <div class="glass-panel measure-banner" id="measureBanner" hidden>
+            <div class="measure-info">
+                <i data-lucide="ruler" class="neon-orange-icon"></i>
+                <div>
+                    <strong>Righello Tattico Leonida</strong>
+                    <span id="measureStats">Clicca due o più punti sulla mappa...</span>
+                </div>
+            </div>
+            <div class="measure-btns">
+                <button class="hud-mini-btn" id="btnClearMeasure" title="Azzera">Reset</button>
+                <button class="hud-mini-btn" id="btnExitMeasure" title="Esci">Chiudi</button>
+            </div>
+        </div>
+
+        <div class="bottom-right-cluster">
+            <div class="glass-panel telemetry-pill">
+                <div class="telemetry-item">
+                    <span class="tel-label">GPS</span>
+                    <code id="liveGpsCoords">X: 0000 · Y: 0000</code>
+                </div>
+                <div class="tel-divider"></div>
+                <div class="telemetry-item">
+                    <span class="tel-label">TROVATI</span>
+                    <strong id="foundProgressText">0 / 3485</strong>
+                </div>
+            </div>
+
+            <div class="glass-panel zoom-dock">
+                <button class="zoom-btn" id="btnZoomOut" title="Zoom Out (-)">
+                    <i data-lucide="minus"></i>
+                </button>
+                <span class="zoom-level" id="zoomLevelText">Z3</span>
+                <button class="zoom-btn" id="btnZoomIn" title="Zoom In (+)">
+                    <i data-lucide="plus"></i>
+                </button>
+                <div class="zoom-sep"></div>
+                <!-- Classic Target / Bullseye With Center Dot Icon for Recentering Map! -->
+                <button class="zoom-btn" id="btnResetView" title="Ricentra Mappa alla Posizione Iniziale">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="7"></circle>
+                        <circle cx="12" cy="12" r="2.2" fill="currentColor"></circle>
+                        <line x1="12" y1="2" x2="12" y2="5"></line>
+                        <line x1="12" y1="19" x2="12" y2="22"></line>
+                        <line x1="2" y1="12" x2="5" y2="12"></line>
+                        <line x1="19" y1="12" x2="22" y2="12"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Lightbox Modal for Enlarging Photos -->
+    <div class="lightbox-modal" id="lightboxModal" hidden>
+        <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
+        <div class="glass-panel lightbox-content">
+            <img id="lightboxImg" src="" alt="Foto ingrandita">
+            <div class="lightbox-caption">
+                <div>
+                    <strong id="lightboxTitle">Titolo Foto</strong>
+                    <span id="lightboxSub">Dettagli</span>
+                </div>
+                <div class="lightbox-actions">
+                    <button class="btn-primary-gradient" id="btnLightboxFlyTo">
+                        <i data-lucide="map-pin"></i>
+                        <span>Vai allo Spot sulla Mappa</span>
+                    </button>
+                    <button class="widget-close-btn" id="btnCloseLightbox" aria-label="Chiudi foto">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pin Drop Mode Banner -->
+    <div class="glass-panel pindrop-banner" id="pinDropBanner" hidden>
+        <span class="pulse-ring"></span>
+        <span><strong>MODALITÀ CREAZIONE SPOT:</strong> Clicca sulla mappa per posizionare il tuo marker</span>
+        <button class="hud-mini-btn" id="btnCancelPinDropBanner">Annulla (ESC)</button>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="glass-panel toast-notification" id="toastNotification" hidden>
+        <i data-lucide="sparkles" class="toast-icon"></i>
+        <span id="toastMessage">Spot copiato negli appunti!</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="data/spots_bundle.js?v=mobile2"></script>
+    <script src="app.js?v=mobile2"></script>
+</body>
+</html>
